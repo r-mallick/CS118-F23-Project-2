@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
         memcpy(pkt->payload, buffer, bytes_read);
 
         // Send packet
-        if (send_packet(send_sockfd, (struct sockaddr *)&server_addr_to, addr_size, &pkt) < 0) {
+        if (send_packet(send_sockfd, (struct sockaddr *)&server_addr_to, addr_size, pkt) < 0) {
             fclose(fp);
             close(listen_sockfd);
             close(send_sockfd);

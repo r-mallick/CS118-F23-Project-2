@@ -106,9 +106,9 @@ int main(int argc, char *argv[]) {
         struct packet* pkt;
         build_packet(pkt, seq_num, ack_num, last, ack, bytes_read, buffer);
         memset(&pkt, 0, sizeof(pkt));
-        pkt.seqnum = seq_num;
-        pkt.acknum = ack_num;
-        memcpy(pkt.payload, buffer, bytes_read);
+        pkt->seqnum = seq_num;
+        pkt->acknum = ack_num;
+        memcpy(pkt->payload, buffer, bytes_read);
 
         // Send packet
         if (send_packet(send_sockfd, (struct sockaddr *)&server_addr_to, addr_size, &pkt) < 0) {

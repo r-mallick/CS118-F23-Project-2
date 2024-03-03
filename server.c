@@ -62,15 +62,15 @@ int main() {
         }
 
         // Check if packet has the expected sequence number
-        if (buffer.seq_num != expected_seq_num) {
+        if (buffer.seqnum != expected_seq_num) {
             // Packet with unexpected sequence number, send ACK for previous packet
-            ack_pkt.ack_num = expected_seq_num - 1;
+            ack_pkt.acknum = expected_seq_num - 1;
             sendto(send_sockfd, &ack_pkt, sizeof(struct packet), 0, (struct sockaddr *)&client_addr_to, sizeof(client_addr_to));
             continue;
         }
 
         // Write payload to file
-        fwrite(buffer.payload, 1, recv_len - HEADER_SIZE, fp);
+        fwrite(buffer.payload, 1, buffer.length, fp);
 
         // Update expected sequence number
         expected_seq_num++;
@@ -80,7 +80,7 @@ int main() {
             break;
 
         // Send acknowledgment for the received packet
-        ack_pkt.ack_num = buffer.seq_num;
+        ack_pkt.acknum = buffer.seqnum;
         sendto(send_sockfd, &ack_pkt, sizeof(struct packet), 0, (struct sockaddr *)&client_addr_to, sizeof(client_addr_to));
     }
 

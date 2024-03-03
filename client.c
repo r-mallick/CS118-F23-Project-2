@@ -13,7 +13,7 @@ int receive_ack(int sockfd, struct sockaddr *server_addr, socklen_t addr_size, s
         perror("Error receiving acknowledgment");
         return -1;
     }
-    printf("Received acknowledgment with ACK number %d\n", pkt->ack_num);
+    printf("Received acknowledgment with ACK number %d\n", pkt->acknum);
     return 0;
 }
 int send_packet(int sockfd, struct sockaddr *server_addr, socklen_t addr_size, struct packet *pkt) {
@@ -22,7 +22,7 @@ int send_packet(int sockfd, struct sockaddr *server_addr, socklen_t addr_size, s
         perror("Error sending packet");
         return -1;
     }
-    printf("Sent packet with sequence number %d\n", pkt->seq_num);
+    printf("Sent packet with sequence number %d\n", pkt->seqnum);
     return 0;
 }
 
@@ -103,7 +103,8 @@ int main(int argc, char *argv[]) {
         }
 
         // Create packet
-        build_packet(pkt, seqnum, acknum, last, ack, bytes_read, buffer);
+        struct packet* pkt;
+        build_packet(pkt, seq_num, ack_num, last, ack, bytes_read, buffer);
         memset(&pkt, 0, sizeof(pkt));
         pkt.seqnum = seq_num;
         pkt.acknum = ack_num;

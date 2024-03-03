@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
         build_packet(&pkt, seq_num, ack_num, last, ack, bytes_read, buffer);
 
         // Send packet
-        send(send_sockfd, pkt, sizeof(pckt), 0)
+        send(send_sockfd, &pkt, sizeof(pckt), 0);
 
         // Receive acknowledgment
         bytes_read = recv(listen_sockfd, ack_pkt, sizeof(ack_pkt), 0);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
             // Acknowledgment received is not for the sent packet
             printf("Invalid acknowledgment received\n");
             // Handle retransmission here if necessary
-            send(send_sockfd, pkt, sizeof(pckt), 0)
+            send(send_sockfd, &pkt, sizeof(pckt), 0);
         }
         // Wait for acknowledgment
         // You need to implement acknowledgment handling here

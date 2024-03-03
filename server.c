@@ -53,6 +53,38 @@ int main() {
 
     // TODO: Receive file from the client and save it as output.txt
 
+    while (1) {
+        // Receive data packet from client
+        recv_len = recvfrom(listen_sockfd, &buffer, sizeof(struct packet), 0, (struct sockaddr *)&client_addr_from, &addr_size);
+        if (recv_len < 0) {
+            perror("Error receiving packet");
+            continue;
+        }
+
+        // Check if packet has the expected sequence number
+        if (buffer.seq_num != expected_seq_num) {
+            // Packet with unexpected sequence number, send ACK for previous packet
+            ack_pkt.ack_num = expected_seq_num - 1;
+            sendto(send_sockfd, &ack_pkt, sizeof(struct packet), 0, (struct sockaddr *)&client_addr_to, sizeof(client_addr_to));
+            continue;
+        }
+
+        // Write payload to file
+        fwrite(buffer.payload, 1, recv_len - HEADER_SIZE, fp);
+
+        // Update expected sequence number
+        expected_seq_num++;
+
+        // Check if it's the last packet
+        if (buffer.last)
+            break;
+
+        // Send acknowledgment for the received packet
+        ack_pkt.ack_num = buffer.seq_num;
+        sendto(send_sockfd, &ack_pkt, sizeof(struct packet), 0, (struct sockaddr *)&client_addr_to, sizeof(client_addr_to));
+    }
+
+    printf("File received successfully.\n");
     
 
     fclose(fp);

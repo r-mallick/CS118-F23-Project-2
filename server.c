@@ -55,33 +55,28 @@ int main() {
 
     while (1) {
         // Receive data packet from client
-        recv_len = recvfrom(listen_sockfd, &buffer, sizeof(struct packet), 0, (struct sockaddr *)&client_addr_from, &addr_size);
-        if (recv_len < 0) {
-            perror("Error receiving packet");
-            continue;
-        }
+        recv_len = recv(listen_sockfd, buffer, sizeof(buffer), 0);
 
         // Check if packet has the expected sequence number
         if (buffer.seqnum != expected_seq_num) {
             // Packet with unexpected sequence number, send ACK for previous packet
             ack_pkt.acknum = expected_seq_num - 1;
-            sendto(send_sockfd, &ack_pkt, sizeof(struct packet), 0, (struct sockaddr *)&client_addr_to, sizeof(client_addr_to));
-            continue;
+            send(send_sockfd, ack_pkt, sizeof(ack_pkt), 0);
+        } else {
+            // Write payload to file
+            fwrite(buffer.payload, 1, buffer.length, fp);
+
+            // Update expected sequence number
+            expected_seq_num++;
+
+            // Send acknowledgement for the received packet
+            ack_pkt.acknum = buffer.seqnum;
+            send(send_sockfd, ack_pkt, sizeof(ack_pkt), 0);
+
+            // Check if it is the last packet
+            if (buffer.last)
+                break;
         }
-
-        // Write payload to file
-        fwrite(buffer.payload, 1, buffer.length, fp);
-
-        // Update expected sequence number
-        expected_seq_num++;
-
-        // Check if it's the last packet
-        if (buffer.last)
-            break;
-
-        // Send acknowledgment for the received packet
-        ack_pkt.acknum = buffer.seqnum;
-        sendto(send_sockfd, &ack_pkt, sizeof(struct packet), 0, (struct sockaddr *)&client_addr_to, sizeof(client_addr_to));
     }
 
     printf("File received successfully.\n");

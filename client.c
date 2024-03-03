@@ -7,25 +7,6 @@
 
 #include "utils.h"
 
-int receive_ack(int sockfd, struct sockaddr *server_addr, socklen_t addr_size, struct packet *pkt) {
-    ssize_t bytes_received = recvfrom(sockfd, pkt, sizeof(struct packet), 0, server_addr, &addr_size);
-    if (bytes_received < 0) {
-        perror("Error receiving acknowledgment");
-        return -1;
-    }
-    printf("Received acknowledgment with ACK number %d\n", pkt->acknum);
-    return 0;
-}
-int send_packet(int sockfd, struct sockaddr *server_addr, socklen_t addr_size, struct packet *pkt) {
-    ssize_t bytes_sent = sendto(sockfd, pkt, sizeof(struct packet), 0, server_addr, addr_size);
-    if (bytes_sent < 0) {
-        perror("Error sending packet");
-        return -1;
-    }
-    printf("Sent packet with sequence number %d\n", pkt->seqnum);
-    return 0;
-}
-
 int main(int argc, char *argv[]) {
     int listen_sockfd, send_sockfd;
     struct sockaddr_in client_addr, server_addr_to, server_addr_from;
@@ -95,7 +76,7 @@ int main(int argc, char *argv[]) {
         size_t bytes_read = fread(buffer, 1, PAYLOAD_SIZE, fp);
         if (bytes_read == 0) {
             if (feof(fp))
-                break; // End of file reached
+                last = 1;
             else {
                 perror("Error reading from file");
                 break;
@@ -103,30 +84,14 @@ int main(int argc, char *argv[]) {
         }
 
         // Create packet
-        struct packet* pkt;
-        build_packet(pkt, seq_num, ack_num, last, ack, bytes_read, buffer);
-        memset(&pkt, 0, sizeof(pkt));
-        pkt->seqnum = seq_num;
-        pkt->acknum = ack_num;
-        memcpy(pkt->payload, buffer, bytes_read);
+        build_packet(&pkt, seq_num, ack_num, last, ack, bytes_read, buffer);
 
         // Send packet
-        if (send_packet(send_sockfd, (struct sockaddr *)&server_addr_to, addr_size, pkt) < 0) {
-            fclose(fp);
-            close(listen_sockfd);
-            close(send_sockfd);
-            return 1;
-        }
+        send(send_sockfd, pkt, sizeof(pckt), 0)
 
         // Receive acknowledgment
-        struct packet ack_pkt;
-        if (receive_ack(listen_sockfd, (struct sockaddr *)&server_addr_from, addr_size, &ack_pkt) < 0) {
-            fclose(fp);
-            close(listen_sockfd);
-            close(send_sockfd);
-            return 1;
-        }
-
+        bytes_read = recv(listen_sockfd, ack_pkt, sizeof(ack_pkt), 0);
+        
         // Handle acknowledgment
         if (ack_pkt.acknum == seq_num) {
             // Acknowledgment received for the sent packet
@@ -136,6 +101,7 @@ int main(int argc, char *argv[]) {
             // Acknowledgment received is not for the sent packet
             printf("Invalid acknowledgment received\n");
             // Handle retransmission here if necessary
+            send(send_sockfd, pkt, sizeof(pckt), 0)
         }
         // Wait for acknowledgment
         // You need to implement acknowledgment handling here
@@ -143,8 +109,6 @@ int main(int argc, char *argv[]) {
         // Ensure the acknowledgment corresponds to the sent packet
         // If acknowledgment received is correct, update sequence number and continue sending
         // Otherwise, resend the packet
-        seq_num++;
-        
     }
     fclose(fp);
     close(listen_sockfd);

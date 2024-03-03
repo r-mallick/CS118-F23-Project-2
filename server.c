@@ -55,13 +55,13 @@ int main() {
 
     while (1) {
         // Receive data packet from client
-        recv_len = recv(listen_sockfd, buffer, sizeof(buffer), 0);
+        recv_len = recv(listen_sockfd, &buffer, sizeof(buffer), 0);
 
         // Check if packet has the expected sequence number
         if (buffer.seqnum != expected_seq_num) {
             // Packet with unexpected sequence number, send ACK for previous packet
             ack_pkt.acknum = expected_seq_num - 1;
-            send(send_sockfd, ack_pkt, sizeof(ack_pkt), 0);
+            send(send_sockfd, &ack_pkt, sizeof(ack_pkt), 0);
         } else {
             // Write payload to file
             fwrite(buffer.payload, 1, buffer.length, fp);
@@ -71,7 +71,7 @@ int main() {
 
             // Send acknowledgement for the received packet
             ack_pkt.acknum = buffer.seqnum;
-            send(send_sockfd, ack_pkt, sizeof(ack_pkt), 0);
+            send(send_sockfd, &ack_pkt, sizeof(ack_pkt), 0);
 
             // Check if it is the last packet
             if (buffer.last)

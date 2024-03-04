@@ -54,8 +54,12 @@ int main() {
     // TODO: Receive file from the client and save it as output.txt
 
     while (1) {
-        // Receive data packet from client
+    // Receive data packet from client
         recv_len = recv(listen_sockfd, &buffer, sizeof(buffer), 0);
+        if (recv_len < 0) {
+            perror("Error receiving packet");
+            continue;
+        }
 
         // Check if packet has the expected sequence number
         if (buffer.seqnum != expected_seq_num) {
@@ -83,7 +87,6 @@ int main() {
     }
 
     printf("File received successfully.\n");
-    
 
     fclose(fp);
     close(listen_sockfd);

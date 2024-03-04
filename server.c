@@ -62,9 +62,11 @@ int main() {
             // Packet with unexpected sequence number, send ACK for previous packet
             ack_pkt.acknum = expected_seq_num - 1;
             send(send_sockfd, &ack_pkt, sizeof(ack_pkt), 0);
+            printf("Ack sent for previous packet\n");
         } else {
             // Write payload to file
             fwrite(buffer.payload, 1, buffer.length, fp);
+            printf("Payload written\n");
 
             // Update expected sequence number
             expected_seq_num++;
@@ -72,6 +74,7 @@ int main() {
             // Send acknowledgement for the received packet
             ack_pkt.acknum = buffer.seqnum;
             send(send_sockfd, &ack_pkt, sizeof(ack_pkt), 0);
+            printf("Ack sent for current packet\n");
 
             // Check if it is the last packet
             if (buffer.last)

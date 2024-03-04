@@ -19,21 +19,21 @@ int main(int argc, char *argv[]) {
     unsigned short ack_num = 0;
     char last = 0;
     char ack = 0;
-
+    
     // read filename from command line argument
     if (argc != 2) {
         printf("Usage: ./client <filename>\n");
         return 1;
     }
     char *filename = argv[1];
-
+    
     // Create a UDP socket for listening
     listen_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (listen_sockfd < 0) {
         perror("Could not create listen socket");
         return 1;
     }
-
+    
     // Create a UDP socket for sending
     send_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (send_sockfd < 0) {
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     server_addr_to.sin_family = AF_INET;
     server_addr_to.sin_port = htons(SERVER_PORT_TO);
     server_addr_to.sin_addr.s_addr = inet_addr(SERVER_IP);
-
+    
     // Configure the client address structure
     memset(&client_addr, 0, sizeof(client_addr));
     client_addr.sin_family = AF_INET;
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
         close(listen_sockfd);
         return 1;
     }
-
+    
     // Open file for reading
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL) {
@@ -68,12 +68,17 @@ int main(int argc, char *argv[]) {
         close(send_sockfd);
         return 1;
     }
-
+    
     // TODO: Read from file, and initiate reliable data transfer to the server
-
+    
     while (!feof(fp)) {
         // Read data from file
         size_t bytes_read = fread(buffer, 1, PAYLOAD_SIZE, fp);
+        if (bytes_read < PAYLOAD_SIZE) {
+            if (feof(fp)) {
+                last = 1;
+            }
+        }
         if (bytes_read == 0) {
             if (feof(fp))
                 last = 1;
@@ -85,12 +90,15 @@ int main(int argc, char *argv[]) {
 
         // Create packet
         build_packet(&pkt, seq_num, ack_num, last, ack, bytes_read, buffer);
-
+        printf("Packet created\n");
+        
         // Send packet
         send(send_sockfd, &pkt, sizeof(pkt), 0);
+        printf("Packet sent\n");
 
         // Receive acknowledgment
         bytes_read = recv(listen_sockfd, &ack_pkt, sizeof(ack_pkt), 0);
+        printf("Ack received\n");
         
         // Handle acknowledgment
         if (ack_pkt.acknum == seq_num) {

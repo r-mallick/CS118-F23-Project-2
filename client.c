@@ -118,7 +118,6 @@ int main(int argc, char *argv[]) {
                 break;
             } else if (ack_pkt.acknum != seq_num) {
                 printf("Invalid acknowledgement received");
-            }
             } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // Timeout occurred, resend packet
                 printf("Timeout occurred, resending packet\n");

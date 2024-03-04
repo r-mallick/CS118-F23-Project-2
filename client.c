@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
-
+#include <errno.h>
 #include "utils.h"
 
 int main(int argc, char *argv[]) {
@@ -111,10 +111,14 @@ int main(int argc, char *argv[]) {
 
             // Receive acknowledgment
             bytes_read = recvfrom(listen_sockfd, &ack_pkt, sizeof(ack_pkt), 0, NULL, NULL);
-            if (bytes_read >= 0) {
+            if (bytes_read >= 0 && ack_pkt.acknum == seq_num) {
                 // Acknowledgment received
-                printf("Ack received\n");
+                printf("Acknowledgment received for sequence number %d\n", seq_num);
+                seq_num++; // Update sequence number for next packet
                 break;
+            } else if (ack_pkt.acknum != seq_num) {
+                printf("Invalid acknowledgement received");
+            }
             } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // Timeout occurred, resend packet
                 printf("Timeout occurred, resending packet\n");
@@ -122,37 +126,6 @@ int main(int argc, char *argv[]) {
                 // Error occurred
                 perror("recvfrom");
                 // Handle error
-            }
-        }
-        
-        // Handle acknowledgment
-        if (ack_pkt.acknum == seq_num) {
-            // Acknowledgment received for the sent packet
-            printf("Acknowledgment received for sequence number %d\n", seq_num);
-            seq_num++; // Update sequence number for next packet
-        } else {
-            // Acknowledgment received is not for the sent packet
-            printf("Invalid acknowledgment received\n");
-            // Handle retransmission here if necessary
-            while (1) {
-                // Send packet
-                sendto(send_sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&server_addr_to, sizeof(server_addr_to));
-                printf("Packet sent\n");
-
-                // Receive acknowledgment
-                bytes_read = recvfrom(listen_sockfd, &ack_pkt, sizeof(ack_pkt), 0, NULL, NULL);
-                if (bytes_read >= 0) {
-                    // Acknowledgment received
-                    printf("Ack received\n");
-                    break;
-                } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // Timeout occurred, resend packet
-                    printf("Timeout occurred, resending packet\n");
-                } else {
-                    // Error occurred
-                    perror("recvfrom");
-                    // Handle error
-                }
             }
         }
     }

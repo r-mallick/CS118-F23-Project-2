@@ -134,7 +134,26 @@ int main(int argc, char *argv[]) {
             // Acknowledgment received is not for the sent packet
             printf("Invalid acknowledgment received\n");
             // Handle retransmission here if necessary
-            sendto(send_sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&server_addr_to, sizeof(server_addr_to));
+            while (1) {
+                // Send packet
+                sendto(send_sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&server_addr_to, sizeof(server_addr_to));
+                printf("Packet sent\n");
+
+                // Receive acknowledgment
+                bytes_read = recvfrom(listen_sockfd, &ack_pkt, sizeof(ack_pkt), 0, NULL, NULL);
+                if (bytes_read >= 0) {
+                    // Acknowledgment received
+                    printf("Ack received\n");
+                    break;
+                } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // Timeout occurred, resend packet
+                    printf("Timeout occurred, resending packet\n");
+                } else {
+                    // Error occurred
+                    perror("recvfrom");
+                    // Handle error
+                }
+            }
         }
     }
     fclose(fp);

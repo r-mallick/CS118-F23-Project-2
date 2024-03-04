@@ -70,7 +70,18 @@ int main(int argc, char *argv[]) {
     }
     
     // TODO: Read from file, and initiate reliable data transfer to the server
-    
+    // Build and send packet
+    // Wait for acknowledgment
+    // You need to implement acknowledgment handling here
+    // Receive an acknowledgment from the server
+    // Ensure the acknowledgment corresponds to the sent packet
+    // If acknowledgment received is correct, update sequence number and continue sending
+    // Otherwise, resend the packet
+
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+    setsockopt(listen_sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
+
     while (!feof(fp)) {
         // Read data from file
         size_t bytes_read = fread(buffer, 1, PAYLOAD_SIZE, fp);
@@ -92,15 +103,27 @@ int main(int argc, char *argv[]) {
         build_packet(&pkt, seq_num, ack_num, last, ack, bytes_read, buffer);
         printf("Packet created\n");
         
-        // Send packet
-        //send(send_sockfd, &pkt, sizeof(pkt), 0);
-        sendto(send_sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&server_addr_to, sizeof(server_addr_to));
+        // Sending of packet (with timeout)
+        while (1) {
+            // Send packet
+            sendto(send_sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&server_addr_to, sizeof(server_addr_to));
+            printf("Packet sent\n");
 
-        printf("Packet sent\n");
-
-        // Receive acknowledgment
-        bytes_read = recvfrom(listen_sockfd, &ack_pkt, sizeof(ack_pkt), 0, NULL, NULL);
-        printf("Ack received\n");
+            // Receive acknowledgment
+            bytes_read = recvfrom(listen_sockfd, &ack_pkt, sizeof(ack_pkt), 0, NULL, NULL);
+            if (bytes_read >= 0) {
+                // Acknowledgment received
+                printf("Ack received\n");
+                break;
+            } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // Timeout occurred, resend packet
+                printf("Timeout occurred, resending packet\n");
+            } else {
+                // Error occurred
+                perror("recvfrom");
+                // Handle error
+            }
+        }
         
         // Handle acknowledgment
         if (ack_pkt.acknum == seq_num) {
@@ -113,12 +136,6 @@ int main(int argc, char *argv[]) {
             // Handle retransmission here if necessary
             sendto(send_sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)&server_addr_to, sizeof(server_addr_to));
         }
-        // Wait for acknowledgment
-        // You need to implement acknowledgment handling here
-        // Receive an acknowledgment from the server
-        // Ensure the acknowledgment corresponds to the sent packet
-        // If acknowledgment received is correct, update sequence number and continue sending
-        // Otherwise, resend the packet
     }
     fclose(fp);
     close(listen_sockfd);

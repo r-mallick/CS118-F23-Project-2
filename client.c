@@ -74,17 +74,17 @@ int main(int argc, char *argv[]) {
     while (!feof(fp)) {
         // Read data from file
         size_t bytes_read = fread(buffer, 1, PAYLOAD_SIZE, fp);
-        if (bytes_read < PAYLOAD_SIZE) {
-            if (feof(fp)) {
-                last = 1;
-            }
-        }
         if (bytes_read == 0) {
             if (feof(fp))
                 last = 1;
             else {
                 perror("Error reading from file");
                 break;
+            }
+        }
+        if (bytes_read < PAYLOAD_SIZE) {
+            if (feof(fp)) {
+                last = 1;
             }
         }
 
